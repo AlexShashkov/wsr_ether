@@ -1,4 +1,4 @@
-pragma solidity >= 0.4.1 < 0.7.0;
+pragma solidity >= 0.4.1 < 0.6.0;
 //pragma experimental ABIEncoderV2;
 
 import "./estate.sol";
@@ -18,10 +18,10 @@ contract Buy is Main
     struct Buyer
     {
         // Структура покупателя
-        address buyer;
         uint adId;
         uint value;
         uint8 state;
+        address buyer;
     }
     
     // state: 0: отказано, 1: неизвестно, 2: деньги возвращены, 3: купил
@@ -124,7 +124,7 @@ contract Buy is Main
         payToContract(ads[_id].value);
         //askedForOwnership[msg.sender] = _id;
         //askedForOwnershipSize++;
-        buyers.push(Buyer(msg.sender, _id, ads[_id].value, 1));
+        buyers.push(Buyer(_id, ads[_id].value, 1, msg.sender));
         addressToBuyers[msg.sender]++;
         emit userAskedPurchase(_id, msg.value, msg.sender);
     }
@@ -205,6 +205,13 @@ contract Buy is Main
         return (get.id, get.value, get.lifetime, get.owner);
     }
     
+    function getRequest(uint _id) external view returns (uint, uint, uint8, address)
+    {
+        // Получить рекламу по id
+        Buyer memory get = buyers[_id];
+        return (get.adId, get.value, get.state, get.buyer);
+    }
+    
     function getAdsOfOwner () external view returns (uint32[] memory) //, uint[] memory, uint32[] memory
     {
         // Вернет все рекламы адреса
@@ -228,12 +235,21 @@ contract Buy is Main
     function getRequestsOfUser () external view returns (uint32[] memory) //uint[] memory, uint8[] memory
     {
         // Вернет все запросы адреса
-        uint32[] memory ids = new uint32[](addressToAds[msg.sender]);
+        uint size = 0;
+        
+        for (uint i = 0; i < buyers.length; i++)
+        {
+            if(buyers[i].buyer == msg.sender){
+                size++;
+            }
+        }
+        
+        uint32[] memory ids = new uint32[](size);
         //uint[] memory values = new uint[](addressToBuyers[msg.sender]);
         //uint8[] memory states = new uint8[](addressToBuyers[msg.sender]);
         
         uint counter = 0;
-        for(uint i = 0; i < ads.length ; i++)
+        for(uint i = 0; i < buyers.length ; i++)
         {
             if(buyers[i].buyer == msg.sender){
                 ids[counter] = uint32(i);
