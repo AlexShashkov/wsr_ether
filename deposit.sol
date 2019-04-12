@@ -1,4 +1,4 @@
-pragma solidity >= 0.4.1 < 0.7.0;
+pragma solidity >= 0.4.1 < 0.6.0;
 //pragma experimental ABIEncoderV2;
 
 import "./estate.sol";
@@ -17,6 +17,7 @@ contract Deposit is Main
     
     struct Buyer
     {
+    // Структура покупателя
         uint adId;
         uint value;
         uint8 state;
@@ -104,7 +105,7 @@ contract Deposit is Main
     function createAd(uint _id, uint _value, uint32 _propLifetime, uint _lifetime) external ifOwner(msg.sender, _id)
     {
         // Создать объявление о продаже
-        uint32 stamp = uint32(now + _lifetime * 1 days);
+        uint32 stamp = uint32(now + _lifetime * 1 seconds);
         ads.push(Advertisment(_id, _value, _propLifetime, stamp, msg.sender));
         addressToAds[msg.sender]++;
         emit createAdvertisment(_id, _value, _propLifetime, stamp, msg.sender);
@@ -162,7 +163,7 @@ contract Deposit is Main
     {
         // Подтвердить владельца и снять деньги. Деньги также переводятся остальным людям которые запросили покупку ДАННОГО id и имеют статус 1
         require(ads[_id].lifetime > now);
-        Advertisment memory ad = ads[_id];
+        Advertisment storage ad = ads[_id];
         //_transfer(msg.sender, _to, ad.id);
         for(uint i = 0; i<buyers.length; i++)
         {
@@ -182,7 +183,9 @@ contract Deposit is Main
             }
         }
         getFromContract(msg.sender, ad.value);
-        ads[_id].lifetime = uint32(now);
+        uint32 propSt = ad.prop_lifetime;
+        ad.prop_lifetime = uint32(now + propSt * 1 seconds);
+        ad.lifetime = uint32(now);
         idHolders[_id] = _to;
         emit ownerAcceptsUser(_to, _id, msg.sender);
     }
@@ -190,9 +193,9 @@ contract Deposit is Main
     function depositPayBack(uint _id) external payable ifOwner(msg.sender, ads[_id].id)
     {
         // Вернуть залог
+        require (idHolders[_id] != address(0));
         require (ads[_id].prop_lifetime > now);
         require (msg.value >= ads[_id].value);
-        require (idHolders[_id] != address(0));
         pay(idHolders[_id], msg.value);
         emit ownerReturnsDeposit (idHolders[_id], _id, msg.sender);
         idHolders[_id] = address(0); 
@@ -245,47 +248,66 @@ contract Deposit is Main
         return (get.id, get.value, get.prop_lifetime, get.lifetime, get.owner);
     }
     
-    function getAdsOfOwner () external view returns (uint32[] memory, uint[] memory, uint32[] memory)
+    function getRequest(uint _id) external view returns (uint, uint, uint8, address)
+    {
+        // Получить запрос по id
+        Buyer memory get = buyers[_id];
+        return (get.adId, get.value, get.state, get.buyer);
+    }
+    
+    function getAdsOfOwner () external view returns (uint32[] memory) //, uint[] memory, uint32[] memory
     {
         // Вернет все рекламы адреса
         uint32[] memory ids = new uint32[](addressToAds[msg.sender]);
-        uint[] memory values = new uint[](addressToAds[msg.sender]);
-        uint32[] memory prop_lifetimes = new uint32[](addressToAds[msg.sender]);
-        uint32[] memory lifetimes = new uint32[](addressToAds[msg.sender]);
+        //uint[] memory values = new uint[](addressToAds[msg.sender]);
+        //uint32[] memory prop_lifetimes = new uint32[](addressToAds[msg.sender]);
+        //uint32[] memory lifetimes = new uint32[](addressToAds[msg.sender]);
         
         uint counter = 0;
         for(uint i = 0; i < ads.length ; i++)
         {
             if(ads[i].owner == msg.sender){
                 ids[counter] = uint32(i);
-                values[counter] = ads[i].value;
-                prop_lifetimes[counter] = ads[i].prop_lifetime;
-                lifetimes[counter] = ads[i].lifetime;
+                //values[counter] = ads[i].value;
+                //prop_lifetimes[counter] = ads[i].prop_lifetime;
+                //lifetimes[counter] = ads[i].lifetime;
                 counter++;
             }
         }
-        return (ids, values, lifetimes);
+        return (ids);
     }
     
-    function getRequestsOfUser () external view returns (uint[] memory, uint8[] memory)
+    function getRequestsOfUser () external view returns (uint32[] memory) //uint[] memory, uint8[] memory
     {
         // Вернет все запросы адреса
-        uint[] memory values = new uint[](addressToBuyers[msg.sender]);
-        uint8[] memory states = new uint8[](addressToBuyers[msg.sender]);
         
-        uint counter = 0;
-        for(uint i = 0; i < ads.length ; i++)
+        uint size = 0;
+        
+        for (uint i = 0; i < buyers.length; i++)
         {
             if(buyers[i].buyer == msg.sender){
-                values[counter] = buyers[i].value;
-                states[counter] = buyers[i].state;
+                size++;
+            }
+        }
+        
+        uint32[] memory ids = new uint32[](size);
+        //uint[] memory values = new uint[](addressToBuyers[msg.sender]);
+        //uint8[] memory states = new uint8[](addressToBuyers[msg.sender]);
+        
+        uint counter = 0;
+        for(uint i = 0; i < buyers.length ; i++)
+        {
+            if(buyers[i].buyer == msg.sender){
+                ids[counter] = uint32(i);
+                //values[counter] = buyers[i].value;
+                //states[counter] = buyers[i].state;
                 counter++;
             }
         }
-        return (values, states);
+        return (ids);
     }
     
-    function getRequestsOfAd (uint _id) external view returns (address[] memory, uint[] memory, uint8[] memory)
+    function getRequestsOfAd (uint _id) external view returns (uint32[] memory) //address[] memory, uint[] memory, uint8[] memory
     {
         // Вернет все запросы по рекламе
         
@@ -299,21 +321,23 @@ contract Deposit is Main
         }
         
         
-        address[] memory adr = new address[](size);
-        uint[] memory values = new uint[](size);
-        uint8[] memory states = new uint8[](size);
+        //address[] memory adr = new address[](size);
+        //uint[] memory values = new uint[](size);
+        //uint8[] memory states = new uint8[](size);
+        uint32[] memory ids = new uint32[](size);
         
         uint counter = 0;
         for (uint i = 0; i < buyers.length; i++)
         {
             if(buyers[i].adId == _id){
-                adr[counter] = buyers[i].buyer;
-                values[counter] = buyers[i].value;
-                states[counter] = buyers[i].state;
+                //adr[counter] = buyers[i].buyer;
+                //values[counter] = buyers[i].value;
+                //states[counter] = buyers[i].state;
+                ids[counter] = uint32(i);
                 counter++;
             }
         }
-        return (adr, values, states);
+        return (ids);
     }
     
 }
