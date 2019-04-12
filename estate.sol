@@ -1,12 +1,13 @@
-pragma solidity >= 0.4.1 < 0.7.0;
+pragma solidity >= 0.4.1 < 0.6.0;
 //pragma experimental ABIEncoderV2;
 
 import "./ownable.sol";
 
-contract Main is Ownable
+contract Main
 {
     struct Estate
     {
+    // Структура имущества
         string description;
         uint16 year;
         uint16 area;
@@ -14,7 +15,6 @@ contract Main is Ownable
     }
     
     Estate[] estates;
-    
     
     
     mapping (address => uint32) addressToEstates;
@@ -48,6 +48,7 @@ contract Main is Ownable
     
     event userCreatedEstate
     (
+    // Пользователь создал имущество
         string _place,
         uint16 _year,
         address _sender
@@ -55,6 +56,7 @@ contract Main is Ownable
     
     event userApprovesNewOwner
     (
+    // Пользователь назначил нового владельца
         address _to,
         uint _id,
         address _sender
@@ -62,6 +64,7 @@ contract Main is Ownable
     
     event userAcceptsOwnership
     (
+    // Пользователь подтвердил что он владелец
         address _pastOwner,
         uint _id,
         address _sender
@@ -91,6 +94,7 @@ contract Main is Ownable
     
     function pay(address _to, uint _eth) public payable
     {
+    // Передать деньги адресу со своего кошелька
         require (msg.value >= _eth);
         address payable addr = address(uint160(_to));
         addr.transfer(_eth);
@@ -111,6 +115,7 @@ contract Main is Ownable
     
     function seeContractValue () external view returns (uint)
     {
+    // Сколько денег на контракте
         return address(this).balance; 
     }
     
@@ -122,7 +127,7 @@ contract Main is Ownable
     
     function getEstatesOfOwner () external view returns (uint32[] memory) //, string[] memory, uint16[] memory
     {
-        // Вернет все запросы адреса
+        // Вернет все имущество адреса
         uint32[] memory ids = new uint32[](addressToEstates[msg.sender]);
         //string[] memory names = new string[](addressToEstates[msg.sender]);
         //uint16[] memory dates = new uint16[](addressToEstates[msg.sender]);
@@ -163,6 +168,7 @@ contract Main is Ownable
     
     function returnNull() external pure returns (uint)
     {
+    // Тест-функция
         return 228;
     }
 }
