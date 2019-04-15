@@ -49,9 +49,7 @@ contract Main
     event userCreatedEstate
     (
     // Пользователь создал имущество
-        string _place,
-        uint16 _year,
-        address _sender
+        uint _id
     );
     
     event userApprovesNewOwner
@@ -81,7 +79,7 @@ contract Main
         uint id = estates.push(Estate(_description, _year, _area, _living)) - 1;
         idToOwner[id] = msg.sender;
         addressToEstates[msg.sender]++;
-        emit userCreatedEstate(_description, _year, msg.sender);
+        emit userCreatedEstate(id);
     }
     
     function _transfer (address _from, address _to, uint _id) internal
