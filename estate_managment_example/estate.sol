@@ -1,5 +1,4 @@
 pragma solidity >= 0.4.1 < 0.6.0;
-//pragma experimental ABIEncoderV2;
 
 import "./ownable.sol";
 
@@ -25,11 +24,9 @@ contract Main
     Владелец по id объекта
     */
     
-    //mapping (address => uint) askedForOwnership;
     mapping (uint => address) approvedOwners;
     
      /*
-    Для какого объекта адрес запросил покупку
     Кому разрешено перевести объект
     */
     
@@ -123,30 +120,20 @@ contract Main
         return (idToOwner[_id], estates[_id].description, estates[_id].year, estates[_id].area, estates[_id].living);
     }
     
-    function getEstatesOfOwner () external view returns (uint32[] memory) //, string[] memory, uint16[] memory
+    function getEstatesOfOwner () external view returns (uint32[] memory) 
     {
         // Вернет все имущество адреса
         uint32[] memory ids = new uint32[](addressToEstates[msg.sender]);
-        //string[] memory names = new string[](addressToEstates[msg.sender]);
-        //uint16[] memory dates = new uint16[](addressToEstates[msg.sender]);
-        //uint16[] memory areas = new uint16[](addressToEstates[msg.sender]);
-        //bool[] memory burdens = new bool[](addressToEstates[msg.sender]);
-        //bool[] memory livings = new bool[](addressToEstates[msg.sender]);
         
         uint counter = 0;
         for(uint i = 0; i < estates.length ; i++)
         {
             if(idToOwner[i] == msg.sender){
                 ids[counter] = uint32(i);
-                //names[counter] = estates[i].description;
-                //dates[counter] = estates[i].year;
-                //areas[counter] = estates[i].area;
-                //burdens[counter] = estates[i].burden;
-                //livings[counter] = estates[i].living;
                 counter++;
             }
         }
-        return (ids); //, names, dates
+        return (ids); 
     }
     
     function approveNewOwner(address _new, uint _id) external ifOwner(msg.sender, _id) 
@@ -167,6 +154,6 @@ contract Main
     function returnNull() external pure returns (uint)
     {
     // Тест-функция
-        return 228;
+        return 0;
     }
 }
