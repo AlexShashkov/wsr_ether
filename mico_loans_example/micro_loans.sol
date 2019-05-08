@@ -139,7 +139,7 @@ contract Manager
         loans[_id].lifetime = now;
     }
     
-    function checkFine(uint _id) internal{
+    function checkFine(uint _id) public{
         // Назначить "штраф"
         require(loans[_id].active == true);
         if(now >= loans[_id].lifetime){
@@ -158,10 +158,9 @@ contract Manager
     //                                                              VIEW ФУНКЦИИ
     
     
-    function getLoan(uint _id) external view returns(address, address, uint, uint, uint, uint){
-        require(loans[_id].loaner == msg.sender);
+    function getLoan(uint _id) external view returns(address, address, uint, uint, uint, uint, bool){
         Loan memory get = loans[_id];
-        return(get.loaner, get.borrower, get.value, get.fine, get.lifetime, get.adLifetime);
+        return(get.loaner, get.borrower, get.value, get.fine, get.lifetime, get.adLifetime, get.active);
     }
     
     function getRequest(uint _id) external view returns(uint, address, uint) {
@@ -210,6 +209,11 @@ contract Manager
             }
         }
         return _requests;
+    }
+    
+    function seeCurrentLoanValue(uint _id) external view returns(uint){
+        require(msg.sender == loans[_id].loaner || msg.sender == loans[_id].borrower);
+        return loans[_id].value;
     }
     
     function seeContractValue() external view returns(uint){
