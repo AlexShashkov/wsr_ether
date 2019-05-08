@@ -81,8 +81,9 @@ contract Manager
     
     function requestLoan(uint _id) public {
         // Запросить заем
-        require (loans[_id].adLifetime < now);
+        require (now < loans[_id].adLifetime);
         requests.push(Request(_id, msg.sender, 0));
+        usersRequests[msg.sender]++;
     }
     
     function closeRequests(uint _id) internal{
@@ -106,7 +107,7 @@ contract Manager
     function acceptRequest(uint _id, uint _requestId) public{
         // Принять заем
         require(loans[_id].active == false);
-        require(loans[_id].adLifetime < now);
+        require(now < loans[_id].adLifetime);
         require(requests[_requestId].id == _id);
         requests[_requestId].status = 1;
         for(uint i = 0; i < requests.length; i++){
@@ -163,7 +164,7 @@ contract Manager
         return(get.loaner, get.borrower, get.value, get.fine, get.lifetime, get.adLifetime);
     }
     
-    function getRequest(uint _id) external view returns(uint, address, uint){
+    function getRequest(uint _id) external view returns(uint, address, uint) {
         require(requests[_id].borrower == msg.sender || loans[requests[_id].id].loaner == msg.sender);
         Request memory get = requests[_id];
         return(get.id, get.borrower, get.status);
@@ -213,6 +214,10 @@ contract Manager
     
     function seeContractValue() external view returns(uint){
         return address(this).balance;
+    }
+    
+    function getStamp() external view returns(uint){
+        return now;
     }
     
     
